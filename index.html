@@ -1,0 +1,23 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
+
+<h1 id="message"></h1>
+
+<input type="text" id="keyboard" disabled style="width:100%">
+
+<script>
+
+var subnet = null;
+axios.get('http://10.0.0.1:3000/request')
+  .then(function (response) {
+    document.getElementById("message").innerHTML = response.data;
+    subnet = response.data.split(".")[2];
+  });
+
+setInterval(function(){
+    axios.get('http://10.0.'+subnet+'.1:3000/read')
+    .then(function (response) {
+        document.getElementById("keyboard").value = response.data;
+    });
+}, 1000);
+
+</script>
