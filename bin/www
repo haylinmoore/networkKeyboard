@@ -3,6 +3,9 @@
 var portkbdapp = require('../app');
 var debug = require('debug')('untitled4:server');
 var http = require('http');
+var express = require('express');
+var logger = require('morgan');
+var createError = require('http-errors');
 
 var port = normalizePort(process.env.PORT || '8080');
 portkbdapp.set('port', port);
@@ -53,3 +56,43 @@ function onListening() {
     debug('Listening on ' + bind);
 }
 
+setuptempapp = (tempapp, charcode) => {
+    tempapp.get('/', function(req, res, next) {
+        const options = {
+            hostname: '127.0.0.1',
+            port: 8080,
+            path: '/internal/type',
+            method: 'GET',
+            headers: {
+                "PortKeyboard-Forwarded-For": '' +charcode
+            }
+        };
+
+        let outbound = http.request(options, bufferresponse => {
+          bufferresponse.on('data', d => {
+            res.send(d);
+          })
+        })
+        outbound.on('error', error => {
+            res.send(error);
+        })
+        outbound.end();
+    });
+};
+
+var i;
+for (i = 97; i < 122; i++) {
+    const tempapp = express();
+
+    tempapp.disable('etag');
+    tempapp.use(logger('dev'));
+    tempapp.use(express.json());
+    tempapp.use(express.urlencoded({ extended: false }));
+    setuptempapp(tempapp,i);
+
+    var tempserver = http.createServer(tempapp);
+    tempserver.listen(0);
+    tempserver.on('error', onError);
+    tempserver.on('listening', onListening);
+    console.log('Character '+String.fromCharCode(i)+' listening on port ' +  tempserver.address().port);
+}
