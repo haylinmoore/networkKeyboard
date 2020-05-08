@@ -1,44 +1,47 @@
-const express = require('express')
-const app = express()
-const port = 3000
+var createError = require('http-errors');
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
 
-var keyboard = {};
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
+
+var app = express();
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'pug');
+
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
 
-app.get('/request', (req, res) => {
-	for (let i = 0; i < 255; i++){
-		if (keyboard[i.toString()] == undefined){
-			res.send("The subnet X.X."+i.toString()+".X is ready for your requests");
-		}
-	}
-})
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  next(createError(404));
+});
 
-app.get('/read', (req, res) => {
-	let ip = req.socket.address().address.split(".");
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-	//console.log("Keyboard viewed on subnet "+ ip[2]);
-	if (keyboard[ip[2]] == undefined){
-		res.send("No keyboard activity on the subnet X.X."+ip[2]+".X");
-	}
-	res.send(keyboard[ip[2]]);
-})
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
 
-app.get('/type', (req, res) => {
-	let ip = req.socket.address().address.split(".");
-	//console.log("Key " + ip[3] + " placed on " + ip[2]);
-	if (keyboard[ip[2]] == undefined){
-		keyboard[ip[2]] = "";
-	}
-
-	let key = String.fromCharCode(ip[3]);
-	keyboard[ip[2]]+=key;
-	console.log(keyboard[ip[2]]);
-	res.send("Key accepted");
-
-})
-
-app.listen(port, () => console.log(`Example app listening at http://localhost:${port}`))
+module.exports = app;
